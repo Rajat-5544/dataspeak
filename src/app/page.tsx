@@ -304,6 +304,22 @@ export default function Home() {
       }
 
       if (result.success && result.data) {
+        if (isModifying) {
+          setQueryResult(result);
+          setQueryRows(result.data);
+          setQueryColumns(createColumnsFromData(result.data));
+          setQueryTotalCount(1);
+          const message = `Query executed successfully - ${result.data.length} row${result.data.length !== 1 ? "s" : ""} returned`;
+          setSuccessMessage(message);
+          setShowSuccessAnimation(true);
+
+          toast.success(
+            "Query executed successfully",
+            `Returned ${result.data.length} row${result.data.length !== 1 ? "s" : ""}`
+          );
+          return;
+        }
+
         const db = await getDuckDB();
         const conn = await db.connect();
 
