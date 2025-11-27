@@ -46,6 +46,15 @@ export default function Home() {
     pageIndex: 0,
     pageSize: 10, // Default to 50 rows per page
   });
+  // Query pagination state
+  const [queryPagination, setQueryPagination] = useState<PaginationState>({
+    pageIndex: 0,
+    pageSize: 10,
+  });
+
+  const [queryTotalCount, setQueryTotalCount] = useState(0);
+  const [queryRows, setQueryRows] = useState<any[]>([]);
+
   const [totalRowCount, setTotalRowCount] = useState(0);
   const { toasts, toast, removeToast } = useToast();
 
@@ -55,6 +64,26 @@ export default function Home() {
       fetchPageData(pagination.pageIndex, pagination.pageSize);
     }
   }, [pagination.pageIndex, pagination.pageSize, totalRowCount]);
+
+  useEffect(() => {
+    if (queryTotalCount === 0) return; // No results yet
+    fetchQueryPage(queryPagination.pageIndex, queryPagination.pageSize);
+  }, [queryPagination.pageIndex, queryPagination.pageSize]);  
+
+  async function fetchQueryPage(pageIndex: number, pageSize: number) {
+    const db = await getDuckDB();
+    const conn = await db.connect();
+    try {
+      const offset = pageIndex * pageSize;
+      const result = await conn.query(`SELECT * FROM query_data LIMIT ${pageSize} OFFSET ${offset}`);
+  
+      const rows = result.toArray().map((r: any) => r.toJSON());
+      setQueryRows(rows);
+    } finally {
+      conn.close();
+    }
+  }
+  
 
   async function fetchPageData(pageIndex: number, pageSize: number) {
     // Don't set global isLoading here to avoid UI flickering, possibly add a local "isFetching" if needed
@@ -275,11 +304,43 @@ export default function Home() {
       }
 
       if (result.success && result.data) {
-        setQueryResult(result);
-        setQueryColumns(createColumnsFromData(result.data));
-        const message = `Query executed successfully - ${result.data.length} row${result.data.length !== 1 ? "s" : ""} returned`;
-        setSuccessMessage(message);
-        setShowSuccessAnimation(true);
+        const db = await getDuckDB();
+        const conn = await db.connect();
+
+        // Create query_data table from the result of the SELECT
+        await conn.query("DROP TABLE IF EXISTS query_data;");
+
+        // Turn the user query into the source of the new table
+        await conn.query(`CREATE TABLE query_data AS ${sql}`);
+
+        // Count rows in query_data
+        const countResult = await conn.query("SELECT COUNT(*) AS c FROM query_data;");
+        const total = Number(countResult.toArray()[0].c);
+        setQueryTotalCount(total);
+
+        // Reset pagination to first page
+        setQueryPagination({
+          pageIndex: 0,
+          pageSize: queryPagination.pageSize,
+        });
+
+        // Fetch the first page
+        const page1 = await conn.query(`SELECT * FROM query_data LIMIT ${queryPagination.pageSize} OFFSET 0`);
+
+        const rows = page1.toArray().map((r: any) => r.toJSON());
+
+        setQueryRows(rows);
+
+        // Build columns dynamically from the rows
+        setQueryColumns(createColumnsFromData(rows));
+
+        conn.close();
+
+        setQueryResult({
+          success: true,
+          data: rows,
+          sql: generatedSQL || sql,
+        });
         toast.success(
           "Query executed successfully",
           `Returned ${result.data.length} row${result.data.length !== 1 ? "s" : ""}`
@@ -521,7 +582,7 @@ export default function Home() {
 
                       {/* Query Results Table */}
                       {queryResult.success && queryResult.data && queryResult.data.length > 0 ? (
-                        <DataTable columns={queryColumns} data={queryResult.data} rowCount={queryResult.data.length} pagination={pagination} onPaginationChange={setPagination}/>
+                        <DataTable columns={queryColumns} data={queryRows} rowCount={queryTotalCount} pagination={queryPagination} onPaginationChange={setQueryPagination}/>
                       ) : queryResult.success ? (
                         <div className="text-center py-12 bg-muted/50 rounded-lg border border-border">
                           <p className="text-muted-foreground">Query returned no results</p>
