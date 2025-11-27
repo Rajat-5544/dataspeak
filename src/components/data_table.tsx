@@ -9,19 +9,33 @@ import {
   getSortedRowModel,
   SortingState,
   useReactTable,
+  PaginationState,
+  OnChangeFn,
 } from "@tanstack/react-table";
 
-import { Button } from "@/components/ui/button";
+import { Button } from "./ui/button";
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "../lib/utils";
 
 export interface DataTableProps<TData> {
   columns: ColumnDef<TData>[];
   data: TData[];
+  rowCount?: number; // Optional: Total rows in the database (for manual pagination)
+  pagination?: PaginationState; // Optional: External pagination state
+  onPaginationChange?: OnChangeFn<PaginationState>; // Optional: Handler for pagination changes
 }
 
-export function DataTable<TData>({ columns, data }: DataTableProps<TData>) {
+export function DataTable<TData>({ 
+  columns, 
+  data, 
+  rowCount, 
+  pagination, 
+  onPaginationChange 
+}: DataTableProps<TData>) {
   const [sorting, setSorting] = useState<SortingState>([]);
+
+  // If rowCount is provided, we assume manual (server-side) pagination
+  const isManualPagination = rowCount !== undefined;
 
   const table = useReactTable({
     data,
@@ -30,8 +44,16 @@ export function DataTable<TData>({ columns, data }: DataTableProps<TData>) {
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
     onSortingChange: setSorting,
+    
+    // Manual Pagination Configuration
+    manualPagination: isManualPagination,
+    rowCount: rowCount,
+    onPaginationChange: onPaginationChange,
+    
     state: {
       sorting,
+      // Only pass pagination state if we are controlling it manually
+      ...(isManualPagination && pagination ? { pagination } : {}),
     },
     initialState: {
       pagination: {
@@ -45,7 +67,10 @@ export function DataTable<TData>({ columns, data }: DataTableProps<TData>) {
       {/* Stats */}
       <div className="flex items-center justify-end">
         <div className="text-sm text-muted-foreground">
-          {data.length} {data.length === 1 ? "row" : "rows"}
+          {/* Show total row count from prop if manual, otherwise table length */}
+          {isManualPagination 
+            ? `${rowCount?.toLocaleString()} total rows` 
+            : `${data.length} ${data.length === 1 ? "row" : "rows"}`}
         </div>
       </div>
 

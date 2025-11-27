@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import * as duckdb from "@duckdb/duckdb-wasm";
 import FileUpload from "@/components/file_upload";
 import QueryInput, { QueryMode } from "@/components/query_input";
 import { DataTable } from "@/components/data_table";
@@ -20,6 +21,7 @@ import SuccessAnimation from "@/components/success_animation";
 import { QueryInputSkeleton, TableSkeleton } from "@/components/loading_skeleton";
 import { downloadData, generateFilenameWithTimestamp } from "@/lib/export";
 import { Database, FileSpreadsheet, FileText, Sparkles, Code2, Eye, EyeOff, Download } from "lucide-react";
+import { PaginationState } from "@tanstack/react-table";
 
 export default function Home() {
   const [rows, setRows] = useState<any[]>([]);
@@ -39,7 +41,39 @@ export default function Home() {
   const [hasModifications, setHasModifications] = useState(false);
   const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string>("");
+  // Pagination State
+  const [pagination, setPagination] = useState<PaginationState>({
+    pageIndex: 0,
+    pageSize: 10, // Default to 50 rows per page
+  });
+  const [totalRowCount, setTotalRowCount] = useState(0);
   const { toasts, toast, removeToast } = useToast();
+
+  useEffect(() => {
+    // Only fetch if we have a file loaded (totalRowCount > 0) and we are not in the middle of loading a new file
+    if (totalRowCount > 0 && !isLoading && originalFileName) {
+      fetchPageData(pagination.pageIndex, pagination.pageSize);
+    }
+  }, [pagination.pageIndex, pagination.pageSize, totalRowCount]);
+
+  async function fetchPageData(pageIndex: number, pageSize: number) {
+    // Don't set global isLoading here to avoid UI flickering, possibly add a local "isFetching" if needed
+    const db = await getDuckDB();
+    const conn = await db.connect();
+
+    try {
+      const offset = pageIndex * pageSize;
+      // Fetch only the slice of data needed
+      const result: any = await conn.query(`SELECT * FROM data LIMIT ${pageSize} OFFSET ${offset};`);
+      const values = result.toArray().map((r: any) => r.toJSON());
+      setRows(values);
+    } catch (error) {
+      console.error("Error fetching page:", error);
+      toast.error("Failed to fetch data page");
+    } finally {
+      conn.close();
+    }
+  }
 
   async function loadFile(file: File) {
     setIsLoading(true);
@@ -51,39 +85,35 @@ export default function Home() {
       await conn.query(`DROP TABLE IF EXISTS data;`);
 
       if (file.name.endsWith(".csv")) {
-        const text = await file.text();
-        const blob = new Blob([text], { type: "text/csv" });
-        await db.registerFileBuffer("input.csv", new Uint8Array(await blob.arrayBuffer()));
+        await db.registerFileHandle(file.name, file, duckdb.DuckDBDataProtocol.BROWSER_FILEREADER, true);
 
         await conn.query(`
           CREATE TABLE data AS 
-          SELECT * FROM read_csv('input.csv', AUTO_DETECT=TRUE);
+          SELECT * FROM read_csv('${file.name}', AUTO_DETECT=TRUE);
         `);
       } else if (file.name.endsWith(".xlsx")) {
-        // Register Excel file directly with DuckDB
-        const arrayBuffer = await file.arrayBuffer();
-        await db.registerFileBuffer("input.xlsx", new Uint8Array(arrayBuffer));
+        await db.registerFileHandle(file.name, file, duckdb.DuckDBDataProtocol.BROWSER_FILEREADER, true);
 
         await conn.query(`
           CREATE TABLE data AS 
-          SELECT * FROM read_xlsx('input.xlsx');
+          SELECT * FROM read_xlsx('${file.name}');
         `);
       } else {
         throw new Error("Unsupported file type. Please upload a .csv or .xlsx file.");
       }
 
-      const result: any = await conn.query(`SELECT * FROM data;`);
-      const values = result.toArray().map((r: any) => r.toJSON());
-      //const result = await conn.send("SELECT * FROM data;");
+      const countResult: any = await conn.query(`SELECT COUNT(*) as c FROM data;`);
+      const totalRows = Number(countResult.toArray()[0].c);
+      setTotalRowCount(totalRows);
 
-      //const values = [];
-      //for await (const batch of result) {
-      //  for (let i = 0; i < batch.numRows; i++) {
-      //    values.push(batch.get(i));  // Already JS objects
-      //  }
-      //}
+      const initialPageSize = 10;
+      setPagination({ pageIndex: 0, pageSize: initialPageSize });
+
+      const previewResult: any = await conn.query(`SELECT * FROM data LIMIT ${initialPageSize};`);
+      const values = previewResult.toArray().map((r: any) => r.toJSON());
 
       setRows(values);
+      // Create columns based on the first page of data
       setColumns(createColumnsFromData(values));
       
       // Store file information
@@ -101,7 +131,7 @@ export default function Home() {
       
       toast.success(
         "File loaded successfully!",
-        `${values.length} rows loaded from ${file.name}`
+        `${totalRows.toLocaleString()} total rows available`
       );
     } catch (error) {
       console.error("Error loading file:", error);
@@ -116,7 +146,7 @@ export default function Home() {
   }
 
   async function executeQuery(query: string, mode: QueryMode) {
-    if (!rows.length) {
+    if (totalRowCount === 0) {
       toast.error("No data loaded", "Please upload a file first");
       return;
     }
@@ -230,8 +260,15 @@ export default function Home() {
       // Check if query modified data
       if (result.success && isModifying) {
         setHasModifications(true);
-        // Refresh the full data after modification
-        const refreshResult: any = await conn.query(`SELECT * FROM data;`);
+        // Refresh Total Count
+        const countResult: any = await conn.query(`SELECT COUNT(*) as c FROM data;`);
+        const newTotal = Number(countResult.toArray()[0].c);
+        setTotalRowCount(newTotal);
+
+        // Refresh current page view
+        const offset = pagination.pageIndex * pagination.pageSize;
+        const refreshResult: any = await conn.query(`SELECT * FROM data LIMIT ${pagination.pageSize} OFFSET ${offset};`);
+
         const refreshValues = refreshResult.toArray().map((r: any) => r.toJSON());
         setRows(refreshValues);
         setColumns(createColumnsFromData(refreshValues));
@@ -286,7 +323,7 @@ export default function Home() {
   }
 
   async function handleDownloadData() {
-    if (!fileFormat || !rows.length) {
+    if (!fileFormat || totalRowCount === 0) {
       toast.error("No data to download", "Please upload a file first");
       return;
     }
@@ -449,7 +486,7 @@ export default function Home() {
                   <TabsTrigger value="full">
                     Full Data
                     <span className="ml-2 text-xs text-muted-foreground">
-                      ({rows.length})
+                      ({totalRowCount.toLocaleString()})
                     </span>
                   </TabsTrigger>
                 </TabsList>
@@ -484,7 +521,7 @@ export default function Home() {
 
                       {/* Query Results Table */}
                       {queryResult.success && queryResult.data && queryResult.data.length > 0 ? (
-                        <DataTable columns={queryColumns} data={queryResult.data} />
+                        <DataTable columns={queryColumns} data={queryResult.data} rowCount={queryResult.data.length} pagination={pagination} onPaginationChange={setPagination}/>
                       ) : queryResult.success ? (
                         <div className="text-center py-12 bg-muted/50 rounded-lg border border-border">
                           <p className="text-muted-foreground">Query returned no results</p>
@@ -503,7 +540,7 @@ export default function Home() {
 
                 {/* Full Data Tab */}
                 <TabsContent value="full">
-                  <DataTable columns={columns} data={rows} />
+                  <DataTable columns={columns} data={rows} rowCount={totalRowCount} pagination={pagination} onPaginationChange={setPagination}/>
                 </TabsContent>
               </Tabs>
             </div>
