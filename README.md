@@ -18,21 +18,5 @@ DataSpeak is a **Next.js 16** application that empowers users to upload CSV or E
 * **Framework:** Next.js 16 (App Router) with React 19.
 * **Database:** `@duckdb/duckdb-wasm` for high-performance, in-browser SQL processing.
 * **AI/LLM:** `@langchain/google-genai` using the `gemini-2.0-flash` model to convert natural language to SQL.
-* **Styling:** Tailwind CSS v4 with a custom theme configuration and Shadcn UI components (Buttons, Inputs, Tabs, Toasts).
+* **Styling:** Tailwind CSS with a custom theme configuration and Shadcn UI components (Buttons, Inputs, Tabs, Toasts).
 * **State Management:** React hooks (`useState`, `useRef`) manage the local application state.
-
-### 4. Code Architecture Highlights
-
-* **In-Browser Database (`src/lib/duckdb.ts`):**
-    You have a robust setup for DuckDB that handles worker instantiation. You are creating a `Blob` from the worker script to bypass potential CORS issues when loading the DuckDB worker, ensuring the app runs smoothly in various browser environments.
-
-* **AI-Powered SQL Generation (`src/lib/llm.ts` & `src/app/api/llm/route.ts`):**
-    The backend API route is lightweight. It receives the user's question and the table schema (converted to Markdown), then prompts Gemini to act as an expert data analyst. The system instructions explicitly forbid the AI from hallucinating columns or using forbidden statements like `DROP` or `TRUNCATE` in the generated response.
-
-* **Query Safety Layer (`src/lib/query.ts`):**
-    You implemented a validation layer that distinguishes between "safe" (SELECT) and "unsafe" (UPDATE/DELETE) operations.
-    * `validateSQL`: Checks for forbidden keywords to prevent accidental data loss during standard querying.
-    * `executeSafeQuery` vs `executeUnsafeQuery`: You have separate execution paths, allowing the UI to prompt the user for confirmation only when necessary.
-
-* **Schema Awareness (`src/lib/schema.ts`):**
-    The app dynamically extracts the schema (column names, types, nullability) from the uploaded file using `DESCRIBE` queries. This schema is then formatted into Markdown to provide context to the LLM, ensuring accurate query generation.
