@@ -1,0 +1,17 @@
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background: Slate-900 Rounded Square -->
+  <rect width="32" height="32" rx="8" fill="#0F172A"/>
+  
+  <!-- Speech Bubble Container -->
+  <path d="M26 14C26 19.5228 21.5228 24 16 24C14.5 24 13.1 23.6 11.8 23L6 25L8 19.2C7.4 17.9 7 16 7 14C7 8.47715 11.4772 4 16 4C21.5228 4 26 8.47715 26 14Z" fill="white"/>
+
+  <!-- Database Icon inside Bubble -->
+  <!-- Top Disc -->
+  <ellipse cx="16" cy="9" rx="6" ry="2" fill="#0F172A"/>
+  <!-- Middle Layer 1 -->
+  <path d="M11 9V12C11 12.8284 13.2386 13.5 16 13.5C18.7614 13.5 21 12.8284 21 12V9" stroke="#0F172A" stroke-width="2" stroke-linecap="round"/>
+  <!-- Middle Layer 2 -->
+  <path d="M11 13V16C11 16.8284 13.2386 17.5 16 17.5C18.7614 17.5 21 16.8284 21 16V13" stroke="#0F172A" stroke-width="2" stroke-linecap="round"/>
+  <!-- Bottom Layer -->
+  <path d="M11 17V20C11 20.8284 13.2386 21.5 16 21.5C18.7614 21.5 21 20.8284 21 20V17" stroke="#0F172A" stroke-width="2" stroke-linecap="round"/>
+</svg>
