@@ -556,7 +556,7 @@ export default function Home() {
                     Query Results
                     {queryResult?.success && queryResult.data && (
                       <span className="ml-2 text-xs text-muted-foreground">
-                        ({queryResult.data.length})
+                        ({queryTotalCount.toLocaleString()})
                       </span>
                     )}
                   </TabsTrigger>
@@ -586,7 +586,7 @@ export default function Home() {
                       )}
 
                       {/* Query Result Status */}
-                      <div className="mb-4">
+                      {/* <div className="mb-4">
                         {queryResult.success ? (
                           <p className="text-sm text-muted-foreground">
                             {queryResult.data?.length || 0} row{queryResult.data?.length !== 1 ? "s" : ""} returned
@@ -594,7 +594,7 @@ export default function Home() {
                         ) : (
                           <ErrorDisplay error={queryResult.error || "Query execution failed"} />
                         )}
-                      </div>
+                      </div> */}
 
                       {/* Query Results Table */}
                       {queryResult.success && queryResult.data && queryResult.data.length > 0 ? (
