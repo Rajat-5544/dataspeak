@@ -22,6 +22,7 @@ import { QueryInputSkeleton, TableSkeleton } from "@/components/loading_skeleton
 import { downloadData, generateFilenameWithTimestamp } from "@/lib/export";
 import { Database, FileSpreadsheet, FileText, Sparkles, Code2, Eye, EyeOff, Download } from "lucide-react";
 import { PaginationState } from "@tanstack/react-table";
+import ThemeToggle from "@/components/theme_toggle";
 
 export default function Home() {
   const [rows, setRows] = useState<any[]>([]);
@@ -68,7 +69,7 @@ export default function Home() {
   useEffect(() => {
     if (queryTotalCount === 0) return; // No results yet
     fetchQueryPage(queryPagination.pageIndex, queryPagination.pageSize);
-  }, [queryPagination.pageIndex, queryPagination.pageSize]);  
+  }, [queryPagination.pageIndex, queryPagination.pageSize]);
 
   async function fetchQueryPage(pageIndex: number, pageSize: number) {
     const db = await getDuckDB();
@@ -76,14 +77,14 @@ export default function Home() {
     try {
       const offset = pageIndex * pageSize;
       const result = await conn.query(`SELECT * FROM query_data LIMIT ${pageSize} OFFSET ${offset}`);
-  
+
       const rows = result.toArray().map((r: any) => r.toJSON());
       setQueryRows(rows);
     } finally {
       conn.close();
     }
   }
-  
+
 
   async function fetchPageData(pageIndex: number, pageSize: number) {
     // Don't set global isLoading here to avoid UI flickering, possibly add a local "isFetching" if needed
@@ -144,12 +145,12 @@ export default function Home() {
       setRows(values);
       // Create columns based on the first page of data
       setColumns(createColumnsFromData(values));
-      
+
       // Store file information
       setOriginalFileName(file.name);
       setFileFormat(file.name.endsWith(".csv") ? "csv" : "xlsx");
       setHasModifications(false); // Reset modifications on new file
-      
+
       // Get and store table schema for schema viewer
       try {
         const schema = await getTableSchema(conn, "data");
@@ -157,7 +158,7 @@ export default function Home() {
       } catch (error) {
         console.warn("Failed to get table schema:", error);
       }
-      
+
       toast.success(
         "File loaded successfully!",
         `${totalRows.toLocaleString()} total rows available`
@@ -278,7 +279,7 @@ export default function Home() {
       const result = mode === "sql" || isModifying
         ? await executeUnsafeQuery(conn, sql)
         : await executeSafeQuery(conn, sql);
-      
+
       // Store the SQL that was executed
       if (generatedSQL) {
         result.sql = generatedSQL;
@@ -439,7 +440,12 @@ export default function Home() {
       <main className="min-h-screen bg-gradient-to-b from-background to-muted/20">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 max-w-7xl">
           {/* Hero Section */}
-          <div className="text-center mb-12 space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
+          <div className="text-center mb-12 space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-700 relative">
+            {/* Theme Toggle - positioned in top right */}
+            <div className="absolute top-0 right-0">
+              <ThemeToggle />
+            </div>
+
             <div className="flex items-center justify-center gap-3 mb-4">
               <div className="rounded-full bg-primary/10 p-3">
                 <Database className="h-8 w-8 text-primary" />
@@ -598,7 +604,7 @@ export default function Home() {
 
                       {/* Query Results Table */}
                       {queryResult.success && queryResult.data && queryResult.data.length > 0 ? (
-                        <DataTable columns={queryColumns} data={queryRows} rowCount={queryTotalCount} pagination={queryPagination} onPaginationChange={setQueryPagination}/>
+                        <DataTable columns={queryColumns} data={queryRows} rowCount={queryTotalCount} pagination={queryPagination} onPaginationChange={setQueryPagination} />
                       ) : queryResult.success ? (
                         <div className="text-center py-12 bg-muted/50 rounded-lg border border-border">
                           <p className="text-muted-foreground">Query returned no results</p>
@@ -617,7 +623,7 @@ export default function Home() {
 
                 {/* Full Data Tab */}
                 <TabsContent value="full">
-                  <DataTable columns={columns} data={rows} rowCount={totalRowCount} pagination={pagination} onPaginationChange={setPagination}/>
+                  <DataTable columns={columns} data={rows} rowCount={totalRowCount} pagination={pagination} onPaginationChange={setPagination} />
                 </TabsContent>
               </Tabs>
             </div>
