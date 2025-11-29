@@ -14,8 +14,9 @@ import {
 } from "@tanstack/react-table";
 
 import { Button } from "./ui/button";
-import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ArrowUpDown, ArrowUp, ArrowDown, Maximize2, Minimize2 } from "lucide-react";
 import { cn } from "../lib/utils";
+import { useEffect } from "react";
 
 export interface DataTableProps<TData> {
   columns: ColumnDef<TData>[];
@@ -25,14 +26,15 @@ export interface DataTableProps<TData> {
   onPaginationChange?: OnChangeFn<PaginationState>; // Optional: Handler for pagination changes
 }
 
-export function DataTable<TData>({ 
-  columns, 
-  data, 
-  rowCount, 
-  pagination, 
-  onPaginationChange 
+export function DataTable<TData>({
+  columns,
+  data,
+  rowCount,
+  pagination,
+  onPaginationChange
 }: DataTableProps<TData>) {
   const [sorting, setSorting] = useState<SortingState>([]);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   // If rowCount is provided, we assume manual (server-side) pagination
   const isManualPagination = rowCount !== undefined;
@@ -44,12 +46,12 @@ export function DataTable<TData>({
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
     onSortingChange: setSorting,
-    
+
     // Manual Pagination Configuration
     manualPagination: isManualPagination,
     rowCount: rowCount,
     onPaginationChange: onPaginationChange,
-    
+
     state: {
       sorting,
       // Only pass pagination state if we are controlling it manually
@@ -62,23 +64,66 @@ export function DataTable<TData>({
     },
   });
 
+  // Handle escape key to exit fullscreen
+  // Handle escape key to exit fullscreen and manage body scroll
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && isFullscreen) {
+        setIsFullscreen(false);
+      }
+    };
+
+    if (isFullscreen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "unset";
+    }
+
+    window.addEventListener("keydown", handleEscape);
+    return () => {
+      window.removeEventListener("keydown", handleEscape);
+      document.body.style.overflow = "unset";
+    };
+  }, [isFullscreen]);
+
   return (
-    <div className="w-full space-y-4">
-      {/* Stats */}
-      <div className="flex items-center justify-end">
-        <div className="text-sm text-muted-foreground">
+    <div className={cn(
+      "w-full space-y-4",
+      isFullscreen && "fixed inset-0 z-50 bg-background p-6 overflow-auto"
+    )}>
+      {/* Stats and Fullscreen Toggle */}
+      <div className="flex items-center justify-between">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setIsFullscreen(!isFullscreen)}
+          className="gap-2"
+        >
+          {isFullscreen ? (
+            <>
+              <Minimize2 className="h-4 w-4" />
+              Exit Fullscreen
+            </>
+          ) : (
+            <>
+              <Maximize2 className="h-4 w-4" />
+              Fullscreen
+            </>
+          )}
+        </Button>
+        <div className="text-sm text-muted-foreground mt-2">
           {/* Show total row count from prop if manual, otherwise table length */}
-          {isManualPagination 
-            ? `${rowCount?.toLocaleString()} total rows` 
+          {isManualPagination
+            ? `${rowCount?.toLocaleString()} total rows`
             : `${data.length} ${data.length === 1 ? "row" : "rows"}`}
         </div>
       </div>
 
       {/* Table */}
-      <div className="rounded-lg border bg-card shadow-sm overflow-hidden">
+      <div className="rounded-lg border glass-card shadow-lg overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-muted/50 border-b">
+            <thead className="bg-muted/50 border-b backdrop-blur-sm">
               {table.getHeaderGroups().map((headerGroup) => (
                 <tr key={headerGroup.id}>
                   {headerGroup.headers.map((header) => {
@@ -89,7 +134,7 @@ export function DataTable<TData>({
                         key={header.id}
                         className={cn(
                           "p-4 text-left text-sm font-semibold text-foreground",
-                          canSort && "cursor-pointer select-none hover:bg-muted/80 transition-colors"
+                          canSort && "cursor-pointer select-none hover:bg-muted/80 transition-all duration-200 hover:scale-[1.01]"
                         )}
                         onClick={canSort ? header.column.getToggleSortingHandler() : undefined}
                       >
@@ -98,7 +143,7 @@ export function DataTable<TData>({
                             ? null
                             : flexRender(header.column.columnDef.header, header.getContext())}
                           {canSort && (
-                            <span className="text-muted-foreground">
+                            <span className="text-muted-foreground transition-transform duration-200">
                               {isSorted === "asc" ? (
                                 <ArrowUp className="h-4 w-4" />
                               ) : isSorted === "desc" ? (
@@ -121,7 +166,8 @@ export function DataTable<TData>({
                   <tr
                     key={row.id}
                     className={cn(
-                      "border-b transition-colors hover:bg-muted/50",
+                      "border-b transition-all duration-200",
+                      "hover:bg-primary/5 hover:scale-[1.001] hover:shadow-sm",
                       index % 2 === 0 ? "bg-background" : "bg-muted/20"
                     )}
                   >

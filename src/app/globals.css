@@ -42,7 +42,8 @@
 }
 
 :root {
-  --radius: 0.625rem;
+  --radius: 0.75rem;
+  /* Original Light Theme Colors */
   --background: oklch(1 0 0);
   --foreground: oklch(0.141 0.005 285.823);
   --card: oklch(1 0 0);
@@ -77,6 +78,7 @@
 }
 
 .dark {
+  /* Original Dark Theme Colors */
   --background: oklch(0.141 0.005 285.823);
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.21 0.006 285.885);
@@ -110,14 +112,162 @@
   --sidebar-ring: oklch(0.552 0.016 285.938);
 }
 
+/* Animated Gradient Background */
+@keyframes gradient-shift {
+
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+.animated-gradient {
+  background: linear-gradient(135deg,
+      var(--background),
+      var(--muted),
+      var(--accent),
+      var(--background));
+  background-size: 100% 100%;
+  /* Animation disabled - static gradient */
+}
+
+/* Shimmer Effect for Loading States */
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+.shimmer {
+  background: linear-gradient(90deg,
+      transparent 0%,
+      oklch(0.5 0 0 / 0.1) 50%,
+      transparent 100%);
+  background-size: 1000px 100%;
+  animation: shimmer 2s infinite;
+}
+
+/* Glassmorphism Effects */
+.glass {
+  background: oklch(from var(--card) l c h / 0.7);
+  backdrop-filter: blur(12px) saturate(180%);
+  -webkit-backdrop-filter: blur(12px) saturate(180%);
+  border: 1px solid oklch(from var(--border) l c h / 0.2);
+}
+
+.glass-card {
+  background: oklch(from var(--card) l c h / 0.5);
+  backdrop-filter: blur(16px) saturate(200%);
+  -webkit-backdrop-filter: blur(16px) saturate(200%);
+  border: 1px solid oklch(from var(--border) l c h / 0.05);
+}
+
+/* Enhanced borders and shadows in light mode only */
+html:not(.dark) .glass-card {
+  border: 1px solid oklch(from var(--border) l c h / 0.8);
+  box-shadow:
+    0 8px 32px 0 oklch(from var(--foreground) l c h / 0.1),
+    inset 0 1px 0 0 oklch(from var(--background) l c h / 0.1);
+}
+
+.glass-strong {
+  background: oklch(from var(--card) l c h / 0.8);
+  backdrop-filter: blur(20px) saturate(200%);
+  -webkit-backdrop-filter: blur(20px) saturate(200%);
+  border: 1px solid oklch(from var(--border) l c h / 0.08);
+}
+
+/* Enhanced borders and shadows in light mode only */
+html:not(.dark) .glass-strong {
+  border: 1px solid oklch(from var(--border) l c h / 0.9);
+  box-shadow:
+    0 12px 40px 0 oklch(from var(--foreground) l c h / 0.15),
+    inset 0 1px 0 0 oklch(from var(--background) l c h / 0.2);
+}
+
+/* Hover Glow Effect */
+.hover-glow {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.hover-glow:hover {
+  box-shadow:
+    0 0 20px oklch(from var(--primary) l c h / 0.3),
+    0 0 40px oklch(from var(--primary) l c h / 0.1);
+  transform: translateY(-2px);
+}
+
+/* Smooth Scale Animation */
+.scale-hover {
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.scale-hover:hover {
+  transform: scale(1.02);
+}
+
+.scale-hover:active {
+  transform: scale(0.98);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--muted);
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--muted-foreground);
+  border-radius: 5px;
+  border: 2px solid var(--muted);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--foreground);
+}
+
+/* Pulse Animation */
+@keyframes pulse-glow {
+
+  0%,
+  100% {
+    opacity: 1;
+    box-shadow: 0 0 0 0 oklch(from var(--primary) l c h / 0.7);
+  }
+
+  50% {
+    opacity: 0.8;
+    box-shadow: 0 0 0 10px oklch(from var(--primary) l c h / 0);
+  }
+}
+
+.pulse-glow {
+  animation: pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
-    transition-property: color, background-color, border-color;
+    transition-property: color, background-color, border-color, transform, box-shadow;
     transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
     transition-duration: 200ms;
   }
+
   body {
     @apply bg-background text-foreground;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
   }
 }

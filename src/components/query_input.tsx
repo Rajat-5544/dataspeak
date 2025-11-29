@@ -45,17 +45,18 @@ export default function QueryInput({
       {/* Mode Toggle */}
       <div className="flex items-center gap-2">
         <span className="text-sm font-medium text-muted-foreground">Mode:</span>
-        <div className="inline-flex rounded-lg border border-border bg-muted/50 p-1">
+        <div className="inline-flex rounded-lg border border-border glass p-1 gap-1">
           <button
             type="button"
             onClick={() => setMode("natural")}
             disabled={disabled || isLoading}
             className={cn(
-              "inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-all",
+              "inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-all duration-300",
               "disabled:cursor-not-allowed disabled:opacity-50",
+              "hover:scale-105 active:scale-95",
               mode === "natural"
-                ? "bg-background text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
+                ? "bg-primary text-primary-foreground shadow-md shadow-primary/20"
+                : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
             )}
           >
             <Sparkles className="h-4 w-4" />
@@ -66,11 +67,12 @@ export default function QueryInput({
             onClick={() => setMode("sql")}
             disabled={disabled || isLoading}
             className={cn(
-              "inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-all",
+              "inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-all duration-300",
               "disabled:cursor-not-allowed disabled:opacity-50",
+              "hover:scale-105 active:scale-95",
               mode === "sql"
-                ? "bg-background text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
+                ? "bg-primary text-primary-foreground shadow-md shadow-primary/20"
+                : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
             )}
           >
             <Code2 className="h-4 w-4" />
@@ -93,11 +95,12 @@ export default function QueryInput({
           }
           disabled={disabled || isLoading}
           className={cn(
-            "w-full min-h-[120px] rounded-lg border border-input bg-background px-4 py-3 text-sm",
+            "w-full min-h-[120px] rounded-lg border border-input glass px-4 py-3 text-sm",
             "placeholder:text-muted-foreground",
-            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
+            "focus-visible:shadow-lg focus-visible:shadow-primary/10",
             "disabled:cursor-not-allowed disabled:opacity-50",
-            "resize-y font-mono"
+            "resize-y font-mono transition-all duration-300"
           )}
           rows={4}
         />
@@ -105,7 +108,7 @@ export default function QueryInput({
           <button
             type="button"
             onClick={handleClear}
-            className="absolute right-2 top-2 rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+            className="absolute right-2 top-2 rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-all duration-200 hover:scale-110 active:scale-95"
             aria-label="Clear query"
           >
             <X className="h-4 w-4" />

@@ -22,7 +22,8 @@ import { QueryInputSkeleton, TableSkeleton } from "@/components/loading_skeleton
 import { downloadData, generateFilenameWithTimestamp } from "@/lib/export";
 import { Database, FileSpreadsheet, FileText, Sparkles, Code2, Eye, EyeOff, Download } from "lucide-react";
 import { PaginationState } from "@tanstack/react-table";
-import ThemeToggle from "@/components/theme_toggle";
+import Sidebar from "@/components/sidebar";
+import { useSidebar } from "@/hooks/use-sidebar";
 
 export default function Home() {
   const [rows, setRows] = useState<any[]>([]);
@@ -42,6 +43,10 @@ export default function Home() {
   const [hasModifications, setHasModifications] = useState(false);
   const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string>("");
+
+  // Sidebar state
+  const { isOpen: sidebarOpen, toggle: toggleSidebar } = useSidebar();
+
   // Pagination State
   const [pagination, setPagination] = useState<PaginationState>({
     pageIndex: 0,
@@ -163,6 +168,14 @@ export default function Home() {
         "File loaded successfully!",
         `${totalRows.toLocaleString()} total rows available`
       );
+
+      // Auto-scroll to query section
+      setTimeout(() => {
+        const querySection = document.getElementById("query");
+        if (querySection) {
+          querySection.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      }, 100);
     } catch (error) {
       console.error("Error loading file:", error);
       toast.error(
@@ -437,20 +450,24 @@ export default function Home() {
 
   return (
     <>
-      <main className="min-h-screen bg-gradient-to-b from-background to-muted/20">
+      {/* Sidebar */}
+      <Sidebar isOpen={sidebarOpen} onToggle={toggleSidebar} />
+
+      {/* Main Content */}
+      <main
+        className="min-h-screen bg-background transition-all duration-300"
+        style={{
+          marginLeft: sidebarOpen ? '16rem' : '4rem',
+        }}
+      >
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 max-w-7xl">
           {/* Hero Section */}
-          <div className="text-center mb-12 space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-700 relative">
-            {/* Theme Toggle - positioned in top right */}
-            <div className="absolute top-0 right-0">
-              <ThemeToggle />
-            </div>
-
+          <div id="home" className="text-center mb-12 space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
             <div className="flex items-center justify-center gap-3 mb-4">
               <div className="rounded-full bg-primary/10 p-3">
                 <Database className="h-8 w-8 text-primary" />
               </div>
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold bg-gradient-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent">
                 DataSpeak
               </h1>
             </div>
@@ -458,15 +475,15 @@ export default function Home() {
               Upload CSV or Excel files and explore/update your data with powerful DuckDB-powered analytics
             </p>
             <div className="flex items-center justify-center gap-6 pt-4 text-sm text-muted-foreground">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 scale-hover">
                 <FileText className="h-4 w-4" />
                 <span>CSV Support</span>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 scale-hover">
                 <FileSpreadsheet className="h-4 w-4" />
                 <span>Excel Support</span>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 scale-hover">
                 <Sparkles className="h-4 w-4" />
                 <span>Instant Analysis</span>
               </div>
@@ -480,7 +497,7 @@ export default function Home() {
 
           {/* Query Interface */}
           {rows.length > 0 && (
-            <div className="mb-12 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-300 space-y-6">
+            <div id="query" className="mb-12 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-300 space-y-6">
               <div>
                 <div className="mb-6">
                   <h2 className="text-2xl font-semibold mb-2">Query Your Data</h2>
@@ -488,7 +505,7 @@ export default function Home() {
                     Ask questions in natural language or write SQL queries directly
                   </p>
                 </div>
-                <div className="bg-card border border-border rounded-lg p-6 shadow-sm">
+                <div className="glass-card rounded-lg p-6 shadow-lg hover-glow">
                   {isExecutingQuery ? (
                     <QueryInputSkeleton />
                   ) : (
@@ -503,7 +520,9 @@ export default function Home() {
 
               {/* Schema Viewer */}
               {tableSchema && (
-                <SchemaViewer schema={tableSchema} />
+                <div className="glass-card rounded-lg p-6 shadow-lg">
+                  <SchemaViewer schema={tableSchema} />
+                </div>
               )}
             </div>
           )}
@@ -523,7 +542,7 @@ export default function Home() {
                         variant="default"
                         size="sm"
                         onClick={handleDownloadData}
-                        className="gap-2"
+                        className="gap-2 scale-hover"
                       >
                         <Download className="h-4 w-4" />
                         Download {fileFormat?.toUpperCase()}
@@ -534,7 +553,7 @@ export default function Home() {
                         variant="outline"
                         size="sm"
                         onClick={() => setShowSQL(!showSQL)}
-                        className="gap-2"
+                        className="gap-2 scale-hover"
                       >
                         {showSQL ? (
                           <>
@@ -580,39 +599,28 @@ export default function Home() {
                     <>
                       {/* SQL Display */}
                       {showSQL && queryResult.sql && (
-                        <div className="mb-6 p-4 bg-muted/50 rounded-lg border border-border">
+                        <div className="mb-6 glass rounded-lg p-4">
                           <div className="flex items-center gap-2 mb-2">
                             <Code2 className="h-4 w-4 text-muted-foreground" />
                             <span className="text-sm font-medium text-muted-foreground">Executed SQL:</span>
                           </div>
-                          <pre className="text-sm font-mono bg-background p-3 rounded border border-border overflow-x-auto">
+                          <pre className="text-sm font-mono bg-background/50 p-3 rounded border border-border overflow-x-auto">
                             <code>{queryResult.sql}</code>
                           </pre>
                         </div>
                       )}
 
-                      {/* Query Result Status */}
-                      {/* <div className="mb-4">
-                        {queryResult.success ? (
-                          <p className="text-sm text-muted-foreground">
-                            {queryResult.data?.length || 0} row{queryResult.data?.length !== 1 ? "s" : ""} returned
-                          </p>
-                        ) : (
-                          <ErrorDisplay error={queryResult.error || "Query execution failed"} />
-                        )}
-                      </div> */}
-
                       {/* Query Results Table */}
                       {queryResult.success && queryResult.data && queryResult.data.length > 0 ? (
                         <DataTable columns={queryColumns} data={queryRows} rowCount={queryTotalCount} pagination={queryPagination} onPaginationChange={setQueryPagination} />
                       ) : queryResult.success ? (
-                        <div className="text-center py-12 bg-muted/50 rounded-lg border border-border">
+                        <div className="text-center py-12 glass-card rounded-lg">
                           <p className="text-muted-foreground">Query returned no results</p>
                         </div>
                       ) : null}
                     </>
                   ) : (
-                    <div className="text-center py-12 bg-muted/50 rounded-lg border border-border">
+                    <div className="text-center py-12 glass-card rounded-lg">
                       <p className="text-muted-foreground">No query executed yet</p>
                       <p className="text-sm text-muted-foreground mt-2">
                         Run a query above to see results here
@@ -632,7 +640,7 @@ export default function Home() {
           {/* Empty State */}
           {rows.length === 0 && (
             <div className="text-center py-16 animate-in fade-in duration-700 delay-300">
-              <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-muted mb-4">
+              <div className="inline-flex items-center justify-center w-20 h-20 rounded-full glass-card mb-4">
                 <Database className="h-10 w-10 text-muted-foreground" />
               </div>
               <h3 className="text-xl font-semibold mb-2">No data loaded yet</h3>

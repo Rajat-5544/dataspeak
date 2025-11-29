@@ -113,11 +113,13 @@ export default function FileUpload({
         onDrop={handleDrop}
         onClick={() => fileInputRef.current?.click()}
         className={cn(
-          "relative border-2 border-dashed rounded-xl p-8 transition-all duration-200 cursor-pointer",
+          "relative border-2 border-dashed rounded-xl p-8 transition-all duration-300 cursor-pointer",
+          "glass-card scale-hover",
           isDragging
-            ? "border-primary bg-primary/5 scale-[1.02]"
-            : "border-border hover:border-primary/50 bg-card",
-          isLoading && "opacity-50 pointer-events-none"
+            ? "border-primary bg-primary/10 scale-[1.03] shadow-lg shadow-primary/20"
+            : "border-border hover:border-primary/50 hover-glow",
+          isLoading && "opacity-50 pointer-events-none",
+          fileName && "hover:shadow-xl"
         )}
       >
         <input
