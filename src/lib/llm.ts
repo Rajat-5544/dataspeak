@@ -16,7 +16,7 @@ export function getGeminiModel(apiKey?: string): ChatGoogleGenerativeAI {
   }
 
   return new ChatGoogleGenerativeAI({
-    model: "gemini-3.1-flash-lite",
+    model: "gemini-3.1-flash-lite-preview",
     temperature: 0,
     apiKey: key,
   });
@@ -98,8 +98,7 @@ The schema will be provided below.`,
     return sql;
   } catch (error) {
     throw new Error(
-      `Failed to generate SQL: ${error instanceof Error ? error.message : "Unknown error"
-      }`
+      `Failed to generate SQL: ${error instanceof Error ? error.message : "Unknown error"}`
     );
   }
 }
