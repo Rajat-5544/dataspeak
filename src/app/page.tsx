@@ -210,7 +210,21 @@ export default function Home() {
         try {
           // Get schema for the data table
           const schema = await getTableSchema(conn, "data");
-          const schemaMarkdown = formatSchemaAsMarkdown(schema);
+          let schemaMarkdown = formatSchemaAsMarkdown(schema);
+
+          // Get sample data to improve LLM understanding
+          try {
+            // Using DuckDB's native sampling to get a diverse spread of rows
+            const sampleResult: any = await conn.query(`SELECT * FROM data USING SAMPLE 10;`);
+            const sampleRows = sampleResult.toArray().map((r: any) => r.toJSON());
+            
+            if (sampleRows.length > 0) {
+              schemaMarkdown += "\n\n### Sample Data (10 randomly sampled rows)\n";
+              schemaMarkdown += "```json\n" + JSON.stringify(sampleRows, null, 2) + "\n```";
+            }
+          } catch (e) {
+            console.warn("Failed to get sample data for LLM", e);
+          }
 
           // Call LLM API to generate SQL
           const response = await fetch("/api/llm", {
